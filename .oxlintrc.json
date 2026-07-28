@@ -1,0 +1,415 @@
+{
+	// 에디터 자동완성용 (oxc.oxc-vscode 확장이 이 스키마로 rule 이름/옵션을 제안해줌)
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+
+	// 파일 전체(js/ts 공통)에서 켜지는 플러그인. react/import/jsx-a11y/unicorn은
+	// 아래 overrides의 ts/tsx, js/jsx 블록에서만 켬 (원래 ESLint 설정이 그렇게 나뉘어 있었음)
+	"plugins": ["typescript"],
+
+	// oxlint 네이티브 규칙엔 아래 항목들을 실제로 코드 치환까지 해주는 fixer/규칙이 없어서,
+	// 해당 ESLint 플러그인을 그대로 로드해서 씀 (jsPlugins는 알파 기능, semver 대상 아님).
+	// - no-relative-import-paths: "../foo" → "@/foo" 치환
+	// - prefer-arrow-functions: "function foo(){}" → "const foo = () => {}" 치환
+	//   (단, "export default function Foo(){}" 형태는 이 selector가 콤비네이터라
+	//   oxlint의 jsPlugins가 못 잡음 — "function Foo(){} export default Foo;"로 나눠 쓰면 잡힘)
+	// - @tanstack/eslint-plugin-query: react-query 관련 전용 규칙 (oxlint 네이티브 지원 없음).
+	//   "@tanstack/query"로 alias한 이유: 패키지가 스스로 registry key를 "@tanstack/query"로 씀
+	"jsPlugins": [
+		"eslint-plugin-no-relative-import-paths",
+		"eslint-plugin-prefer-arrow-functions",
+		{ "name": "@tanstack/query", "specifier": "@tanstack/eslint-plugin-query" }
+	],
+
+	// oxlint 기본 제공 "correctness" 카테고리를 통째로 끔.
+	// 켜두면 원래 ESLint 설정에 없던 규칙들까지 대거 error로 잡혀서
+	// 마이그레이션 시 의도적으로 off 처리함. 대신 아래 rules에서
+	// 예전 ESLint가 잡던 correctness 규칙들만 하나씩 다시 켜놓음.
+	"categories": {
+		"correctness": "off"
+	},
+
+	"env": {
+		"builtin": true
+	},
+
+	// 린트 대상에서 제외할 경로 (빌드 산출물, 설정 파일 등)
+	"ignorePatterns": ["dist/**", "node_modules/**", "public/**", "*.config.js", "*.config.ts", ".prettierrc.js", "vite.config.ts", "build/**", "coverage/**"],
+
+	// ── 전체 파일 공통 규칙 ──────────────────────────────────────────
+	// "correctness" 카테고리를 껐기 때문에, 실제 버그를 잡아주던 규칙들을
+	// 여기서 개별적으로 error 처리함. 전부 "이러면 100% 버그"인 것들이라
+	// severity를 낮출 이유가 없음 (typo, 도달 불가 코드, 잘못된 비교 등)
+	"rules": {
+		"constructor-super": "error",
+		"for-direction": "error",
+		"getter-return": "error",
+		"no-async-promise-executor": "error",
+		"no-case-declarations": "error",
+		"no-class-assign": "error",
+		"no-compare-neg-zero": "error",
+		"no-cond-assign": "error",
+		"no-const-assign": "error",
+		"no-constant-binary-expression": "error",
+		"no-constant-condition": "error",
+		"no-control-regex": "error",
+		"no-debugger": "error",
+		"no-delete-var": "error",
+		"no-dupe-class-members": "error",
+		"no-dupe-else-if": "error",
+		"no-dupe-keys": "error",
+		"no-duplicate-case": "error",
+		"no-empty": "error",
+		"no-empty-character-class": "error",
+		"no-empty-pattern": "error",
+		"no-empty-static-block": "error",
+		"no-ex-assign": "error",
+		"no-extra-boolean-cast": "error",
+		"no-fallthrough": "error",
+		"no-func-assign": "error",
+		"no-global-assign": "error",
+		"no-import-assign": "error",
+		"no-invalid-regexp": "error",
+		"no-irregular-whitespace": "error",
+		"no-loss-of-precision": "error",
+		"no-misleading-character-class": "error",
+		"no-new-native-nonconstructor": "error",
+		"no-nonoctal-decimal-escape": "error",
+		"no-obj-calls": "error",
+		"no-prototype-builtins": "error",
+		"no-redeclare": "error",
+		"no-regex-spaces": "error",
+		"no-self-assign": "error",
+		"no-setter-return": "error",
+		"no-shadow-restricted-names": "error",
+		"no-sparse-arrays": "error",
+		"no-this-before-super": "error",
+		"no-unexpected-multiline": "error",
+		"no-unreachable": "error",
+		"no-unsafe-finally": "error",
+		"no-unsafe-negation": "error",
+		"no-unsafe-optional-chaining": "error",
+		"no-unused-labels": "error",
+		"no-unused-private-class-members": "error",
+		// 미사용 변수. 아래 ts/tsx, js/jsx override에서 "_" 접두사 무시 옵션과 함께 재정의됨
+		"no-unused-vars": "error",
+		"no-useless-backreference": "error",
+		// ts/tsx override에서 off (catch에서 에러 형태만 바꿔 다시 던지는 패턴 허용)
+		"no-useless-catch": "error",
+		"no-useless-escape": "error",
+		"no-with": "error",
+		"require-yield": "error",
+		"use-isnan": "error",
+		"valid-typeof": "error",
+		"no-array-constructor": "error",
+		"no-unused-expressions": "error",
+
+		// TypeScript 플러그인 규칙 (파일 확장자 상관없이 전역 적용 — 실제로는 .ts(x) 파일에서만 매칭됨)
+		"typescript/ban-ts-comment": "error",
+		"typescript/no-duplicate-enum-values": "error",
+		"typescript/no-empty-object-type": "error",
+		// ts/tsx override에서 "warn"으로 완화됨 (any는 종종 불가피)
+		"typescript/no-explicit-any": "error",
+		"typescript/no-extra-non-null-assertion": "error",
+		"typescript/no-misused-new": "error",
+		// ts/tsx override에서 off (namespace 쓰는 코드가 있다면 여기서 켜짐)
+		"typescript/no-namespace": "error",
+		"typescript/no-non-null-asserted-optional-chain": "error",
+		"typescript/no-require-imports": "error",
+		"typescript/no-this-alias": "error",
+		"typescript/no-unnecessary-type-constraint": "error",
+		"typescript/no-unsafe-declaration-merging": "error",
+		"typescript/no-unsafe-function-type": "error",
+		"typescript/no-wrapper-object-types": "error",
+		"typescript/prefer-as-const": "error",
+		"typescript/prefer-namespace-keyword": "error",
+		"typescript/triple-slash-reference": "error"
+	},
+
+	"overrides": [
+		{
+			// .ts/.tsx 파일: JS 전용 정적 분석 규칙들을 끄고 TS 전용 규칙으로 대체.
+			// TS 컴파일러가 이미 타입 레벨에서 잡아주는 것들(클래스 재할당, 함수 재선언 등)이라
+			// oxlint의 JS 버전 규칙은 여기선 꺼야 오탐이 없음.
+			"files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+			"rules": {
+				"constructor-super": "off",
+				"getter-return": "off",
+				"no-class-assign": "off",
+				"no-const-assign": "off",
+				"no-dupe-class-members": "off",
+				"no-dupe-keys": "off",
+				"no-func-assign": "off",
+				"no-import-assign": "off",
+				"no-new-native-nonconstructor": "off",
+				"no-obj-calls": "off",
+				"no-redeclare": "off",
+				"no-setter-return": "off",
+				"no-this-before-super": "off",
+				"no-unreachable": "off",
+				"no-unsafe-negation": "off",
+				"no-var": "error",
+				"no-with": "off",
+				"prefer-const": "error",
+				"prefer-rest-params": "error",
+				"prefer-spread": "error"
+			}
+		},
+		{
+			// .ts/.tsx 전용 — 기존 ESLint(smartm2m-eslint-config) 설정을 그대로 옮긴 규칙들.
+			// js/jsx 블록과 대부분 동일하지만 TS 전용 옵션 몇 개가 추가/변경됨 (아래 표시).
+			"files": ["**/*.{ts,tsx}"],
+			"rules": {
+				// catch에서 형태만 바꿔 재throw하는 패턴 허용
+				"no-useless-catch": "off",
+				// 미사용 변수/인자: "_" 접두사 붙이면 무시 (예: 콜백에서 안 쓰는 인자)
+				"no-unused-vars": [
+					"error",
+					{
+						"vars": "all",
+						"varsIgnorePattern": "^_",
+						"args": "after-used",
+						"argsIgnorePattern": "^_",
+						"ignoreRestSiblings": true,
+						"caughtErrors": "all",
+						"caughtErrorsIgnorePattern": "^_"
+					}
+				],
+
+				// ── 접근성(a11y) ──
+				"jsx-a11y/alt-text": ["warn", { "elements": ["img"] }],
+				"jsx-a11y/aria-props": "warn",
+				"jsx-a11y/aria-proptypes": "warn",
+				"jsx-a11y/aria-unsupported-elements": "warn",
+				"jsx-a11y/role-has-required-aria-props": "warn",
+				"jsx-a11y/role-supports-aria-props": "warn",
+				"jsx-a11y/control-has-associated-label": "error",
+				"jsx-a11y/click-events-have-key-events": "error",
+				"jsx-a11y/heading-has-content": "error",
+				"jsx-a11y/label-has-associated-control": "error",
+				"jsx-a11y/scope": "error",
+				"jsx-a11y/no-redundant-roles": "warn",
+				"jsx-a11y/no-noninteractive-tabindex": ["warn", { "tags": ["div", "span", "table", "thead", "tbody", "tfoot", "tr", "td", "th"] }],
+
+				// oxfmt/oxc 기본 스타일 규칙과 충돌하는 것들 off
+				"curly": "off",
+				"no-unexpected-multiline": "off",
+				"unicorn/empty-brace-spaces": "off",
+				"unicorn/no-nested-ternary": "off",
+				"unicorn/number-literal-case": "off",
+
+				// ── 일반 JS 컨벤션 (severity는 예전 ESLint 설정 그대로) ──
+				"no-console": "off",
+				"no-param-reassign": "off",
+				// for 루프 증감식(i++)은 허용, 그 외 ++/-- 금지
+				"no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+				"array-callback-return": "warn",
+				"guard-for-in": "warn",
+				"class-methods-use-this": "off",
+				"no-underscore-dangle": "off",
+				"no-fallthrough": "warn",
+				"default-case": "off",
+				"no-constructor-return": "warn",
+				"no-nested-ternary": "warn",
+				"no-unused-expressions": "warn",
+				"no-debugger": "warn",
+				"no-alert": "warn",
+				"eqeqeq": ["error", "always"],
+				"no-eval": "error",
+				"no-var": "error",
+				"prefer-const": "error",
+				// 콜백뿐 아니라 함수 선언/표현식 전부를 화살표 함수로 강제 (prefer-arrow-callback보다 범위 넓음,
+				// 둘 다 켜면 같은 코드에 중복 경고가 떠서 prefer-arrow-callback은 이걸로 대체함)
+				"prefer-arrow-functions/prefer-arrow-functions": "warn",
+				"no-implicit-coercion": "off",
+				// 변수 선언 시 객체 구조 분해는 강제, 배열/할당식은 강제 안 함
+				"prefer-destructuring": [
+					"error",
+					{ "VariableDeclarator": { "array": false, "object": true }, "AssignmentExpression": { "array": false, "object": false } }
+				],
+				"no-use-before-define": "off",
+				"no-loop-func": "off",
+				"default-param-last": "off",
+				"no-shadow": "off",
+				"no-empty-function": "warn",
+
+				// ── import 관련 ──
+				"import/extensions": "off",
+				"import/prefer-default-export": "off",
+				"import/no-cycle": "off",
+				"import/no-duplicates": "error",
+				"import/no-self-import": "error",
+				// 상대경로 import 전면 금지("./sibling"도 포함), "@/foo" 별칭 강제.
+				// jsPlugins로 로드한 eslint-plugin-no-relative-import-paths — fixer가 있어서
+				// oxlint --fix / 저장 시 자동수정으로 "../foo", "./foo" → "@/foo" 실제 치환됨
+				"no-relative-import-paths/no-relative-import-paths": [
+					"warn",
+					{
+						"allowSameFolder": false,
+						"rootDir": "src",
+						"prefix": "@"
+					}
+				],
+
+				// ── React ──
+				"react/rules-of-hooks": "error",
+				// exhaustive-deps는 false positive가 많아 원래 설정에서부터 off (코드리뷰로 대체)
+				"react/exhaustive-deps": "off",
+				// 컴포넌트만 export하는 파일 강제, 상수 export는 허용
+				"react/only-export-components": ["warn", { "allowConstantExport": true }],
+				"react/jsx-key": "error",
+				"react/jsx-no-duplicate-props": "error",
+				"react/jsx-no-undef": "error",
+				"react/no-array-index-key": "warn",
+				"react/no-children-prop": "error",
+				"react/no-danger-with-children": "error",
+				"react/no-find-dom-node": "warn",
+				"react/no-render-return-value": "error",
+				"react/no-direct-mutation-state": "error",
+				"react/no-string-refs": "error",
+				"react/jsx-boolean-value": "warn",
+				"react/jsx-no-useless-fragment": "warn",
+				"react/jsx-no-script-url": "warn",
+				// target="_blank"에 rel="noreferrer" 또는 "noopener" 둘 중 하나만 있어도 통과
+				"react/jsx-no-target-blank": ["warn", { "allowReferrer": true }],
+				"react/jsx-no-constructed-context-values": "warn",
+
+				// ── TanStack Query ── (no-void-query-fn은 타입 체커가 필요해 oxlint jsPlugins에서
+				// 조용히 무력화되므로 제외함)
+				"@tanstack/query/exhaustive-deps": "warn",
+				"@tanstack/query/no-rest-destructuring": "warn",
+				"@tanstack/query/stable-query-client": "warn",
+				"@tanstack/query/no-unstable-deps": "warn",
+				"@tanstack/query/infinite-query-property-order": "warn",
+				"@tanstack/query/mutation-property-order": "warn",
+				"@tanstack/query/prefer-query-options": "warn",
+
+				// ── TypeScript (이 블록에서만 적용되는 override) ──
+				"typescript/explicit-function-return-type": "off",
+				// 위 전역 rules에서는 error지만, 여기선 namespace 허용
+				"typescript/no-namespace": "off",
+				// 위 전역 rules에서는 error지만, 여기선 any를 warn으로 완화
+				"typescript/no-explicit-any": "warn"
+			},
+			"env": {
+				"es2026": true,
+				"browser": true
+			},
+			"plugins": ["import", "react", "jsx-a11y", "unicorn"]
+		},
+		{
+			// .js/.jsx 전용 — 위 ts/tsx 블록과 거의 동일하지만 TypeScript 전용 규칙(위의 typescript/* 3개)이 빠짐.
+			// (JSON이라 공통 부분을 변수로 뽑아 재사용할 수 없어서 그대로 중복됨)
+			"files": ["**/*.{js,jsx}"],
+			"rules": {
+				"no-unused-vars": [
+					"error",
+					{
+						"vars": "all",
+						"varsIgnorePattern": "^_",
+						"args": "after-used",
+						"argsIgnorePattern": "^_",
+						"ignoreRestSiblings": true,
+						"caughtErrors": "all",
+						"caughtErrorsIgnorePattern": "^_"
+					}
+				],
+				"jsx-a11y/alt-text": ["warn", { "elements": ["img"] }],
+				"jsx-a11y/aria-props": "warn",
+				"jsx-a11y/aria-proptypes": "warn",
+				"jsx-a11y/aria-unsupported-elements": "warn",
+				"jsx-a11y/role-has-required-aria-props": "warn",
+				"jsx-a11y/role-supports-aria-props": "warn",
+				"jsx-a11y/control-has-associated-label": "error",
+				"jsx-a11y/click-events-have-key-events": "error",
+				"jsx-a11y/heading-has-content": "error",
+				"jsx-a11y/label-has-associated-control": "error",
+				"jsx-a11y/scope": "error",
+				"jsx-a11y/no-redundant-roles": "warn",
+				"jsx-a11y/no-noninteractive-tabindex": ["warn", { "tags": ["div", "span", "table", "thead", "tbody", "tfoot", "tr", "td", "th"] }],
+				"curly": "off",
+				"no-unexpected-multiline": "off",
+				"unicorn/empty-brace-spaces": "off",
+				"unicorn/no-nested-ternary": "off",
+				"unicorn/number-literal-case": "off",
+				"no-console": "off",
+				"no-param-reassign": "off",
+				"no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+				"array-callback-return": "warn",
+				"guard-for-in": "warn",
+				"class-methods-use-this": "off",
+				"no-underscore-dangle": "off",
+				"no-fallthrough": "warn",
+				"default-case": "off",
+				"no-constructor-return": "warn",
+				"no-nested-ternary": "warn",
+				"no-unused-expressions": "warn",
+				"no-debugger": "warn",
+				"no-alert": "warn",
+				"eqeqeq": ["error", "always"],
+				"no-eval": "error",
+				"no-var": "error",
+				"prefer-const": "error",
+				// 콜백뿐 아니라 함수 선언/표현식 전부를 화살표 함수로 강제 (prefer-arrow-callback보다 범위 넓음,
+				// 둘 다 켜면 같은 코드에 중복 경고가 떠서 prefer-arrow-callback은 이걸로 대체함)
+				"prefer-arrow-functions/prefer-arrow-functions": "warn",
+				"no-implicit-coercion": "off",
+				"prefer-destructuring": [
+					"error",
+					{ "VariableDeclarator": { "array": false, "object": true }, "AssignmentExpression": { "array": false, "object": false } }
+				],
+				"import/extensions": "off",
+				"import/prefer-default-export": "off",
+				"import/no-cycle": "off",
+				"import/no-duplicates": "error",
+				"import/no-self-import": "error",
+				"no-relative-import-paths/no-relative-import-paths": [
+					"warn",
+					{
+						"allowSameFolder": false,
+						"rootDir": "src",
+						"prefix": "@"
+					}
+				],
+				"react/rules-of-hooks": "error",
+				"react/exhaustive-deps": "off",
+				"react/only-export-components": ["warn", { "allowConstantExport": true }],
+				"react/jsx-key": "error",
+				"react/jsx-no-duplicate-props": "error",
+				"react/jsx-no-undef": "error",
+				"react/no-array-index-key": "warn",
+				"react/no-children-prop": "error",
+				"react/no-danger-with-children": "error",
+				"react/no-find-dom-node": "warn",
+				"react/no-render-return-value": "error",
+				"react/no-direct-mutation-state": "error",
+				"react/no-string-refs": "error",
+				"react/jsx-boolean-value": "warn",
+				"react/jsx-no-useless-fragment": "warn",
+				"react/jsx-no-script-url": "warn",
+				"react/jsx-no-target-blank": ["warn", { "allowReferrer": true }],
+				"react/jsx-no-constructed-context-values": "warn",
+
+				"@tanstack/query/exhaustive-deps": "warn",
+				"@tanstack/query/no-rest-destructuring": "warn",
+				"@tanstack/query/stable-query-client": "warn",
+				"@tanstack/query/no-unstable-deps": "warn",
+				"@tanstack/query/infinite-query-property-order": "warn",
+				"@tanstack/query/mutation-property-order": "warn",
+				"@tanstack/query/prefer-query-options": "warn"
+			},
+			"env": {
+				"es2026": true,
+				"browser": true
+			},
+			"plugins": ["import", "react", "jsx-a11y", "unicorn"]
+		},
+		{
+			// 테스트 파일: 컴포넌트 외에 헬퍼/픽스처를 같이 export해도 경고 안 뜨게 끔
+			"files": ["**/__tests__/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)"],
+			"rules": {
+				"react/only-export-components": "off"
+			},
+			"plugins": ["react"]
+		}
+	]
+}
