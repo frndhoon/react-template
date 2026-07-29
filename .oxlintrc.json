@@ -410,6 +410,15 @@
 				"react/only-export-components": "off"
 			},
 			"plugins": ["react"]
+		},
+		{
+			// shadcn 컴포넌트 lint 제어
+			"files": ["src/components/ui/**"],
+			"rules": {
+				"react/only-export-components": "off",
+				"react/jsx-no-constructed-context-values": "off"
+			},
+			"plugins": ["react"]
 		}
 	]
 }
