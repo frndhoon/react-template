@@ -31,7 +31,7 @@ const EmptyMedia = ({ className, variant = 'default', ...props }: React.Componen
 );
 
 const EmptyTitle = ({ className, ...props }: React.ComponentProps<'div'>) => (
-	<div data-slot="empty-title" className={cn('font-heading text-sm font-medium tracking-tight', className)} {...props} />
+	<div data-slot="empty-title" className={cn('font-heading text-sm font-medium', className)} {...props} />
 );
 
 const EmptyDescription = ({ className, ...props }: React.ComponentProps<'p'>) => (
